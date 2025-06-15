@@ -7,7 +7,28 @@ import {
 } from '@/types';
 import Cookies from 'js-cookie';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// 開発環境とモバイルアクセス対応
+const getApiBaseUrl = () => {
+  // 本番環境（Netlify）の場合
+  if (process.env.NODE_ENV === 'production') {
+    return '/.netlify/functions';
+  }
+  
+  // 開発環境の場合
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // ブラウザ環境でlocalhost以外からアクセスしている場合（モバイルなど）
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    return `http://${window.location.hostname}:3001`;
+  }
+  
+  // デフォルト（ローカル開発）
+  return 'http://localhost:3001';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ApiClient {
   private async fetchApi<T>(

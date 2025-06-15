@@ -10,7 +10,17 @@ import challengeRoutes from './routes/challenge';
 import sessionRoutes from './routes/session';
 import { authRoutes } from './routes/auth';
 
-const prisma = new PrismaClient();
+// Netlify Functions環境でのPrisma設定
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+  ...(process.env.DATABASE_URL && {
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
+  }),
+});
 
 // Fastifyインスタンスを作成
 const fastify = Fastify({
@@ -30,6 +40,16 @@ declare module 'fastify' {
 
 // プラグインを登録
 async function buildApp() {
+  // データベース接続テスト
+  try {
+    await prisma.$connect();
+    console.log('✅ Database connected successfully');
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Database connection failed: ${errorMessage}`);
+  }
+
   // セキュリティヘッダー
   await fastify.register(helmet);
 
