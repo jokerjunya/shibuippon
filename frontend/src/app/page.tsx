@@ -8,8 +8,10 @@ import ResultCard from '@/components/ResultCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import IpponAnimation from '@/components/IpponAnimation';
+import InstructionPage from '@/components/InstructionPage';
 
 export default function HomePage() {
+  const [showInstructions, setShowInstructions] = useState(true);
   const [gameState, setGameState] = useState<GameState>({
     sessionId: null,
     currentQuestionIndex: 0,
@@ -20,15 +22,17 @@ export default function HomePage() {
 
   const [odais, setOdais] = useState<Odai[]>([]);
   const [result, setResult] = useState<ResultResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showIpponAnimation, setShowIpponAnimation] = useState(false);
 
-  // 初期化：デイリーチャレンジの問題とセッションを取得
-  useEffect(() => {
+  // テスト開始時の初期化
+  const handleStartTest = () => {
+    setShowInstructions(false);
+    setIsLoading(true);
     initializeGame();
-  }, []);
+  };
 
   const initializeGame = async () => {
     try {
@@ -136,13 +140,35 @@ export default function HomePage() {
     setResult(null);
     setError(null);
     setShowIpponAnimation(false);
+    setIsLoading(true);
     initializeGame();
+  };
+
+  // インストラクションページに戻る
+  const handleBackToInstructions = () => {
+    setShowInstructions(true);
+    setGameState({
+      sessionId: null,
+      currentQuestionIndex: 0,
+      answers: [],
+      totalScore: 0,
+      isCompleted: false,
+    });
+    setResult(null);
+    setError(null);
+    setShowIpponAnimation(false);
+    setIsLoading(false);
   };
 
   // IPPONアニメーション完了
   const handleIpponAnimationComplete = () => {
     setShowIpponAnimation(false);
   };
+
+  // インストラクションページ表示
+  if (showInstructions) {
+    return <InstructionPage onStart={handleStartTest} />;
+  }
 
   // ローディング状態
   if (isLoading) {
@@ -174,7 +200,7 @@ export default function HomePage() {
 
   // 結果表示
   if (gameState.isCompleted && result) {
-    return <ResultCard result={result} onRestart={handleRestart} />;
+    return <ResultCard result={result} onRestart={handleRestart} onBackToInstructions={handleBackToInstructions} />;
   }
 
   // 問題表示

@@ -3,7 +3,11 @@
 import React from 'react';
 import { ResultCardProps } from '@/types';
 
-export default function ResultCard({ result, onRestart }: ResultCardProps) {
+interface ExtendedResultCardProps extends ResultCardProps {
+  onBackToInstructions?: () => void;
+}
+
+export default function ResultCard({ result, onRestart, onBackToInstructions }: ExtendedResultCardProps) {
   // 偏差値に基づく評価を取得（IPPON風）
   const getScoreEvaluation = (zScore: number) => {
     if (zScore >= 70) return { emoji: '🏆', title: 'IPPON王', message: 'あなたは真のIPPON芸人です！', color: 'text-yellow-500' };
@@ -95,6 +99,15 @@ export default function ResultCard({ result, onRestart }: ResultCardProps) {
           >
             🔄 もう一度チャレンジ
           </button>
+          
+          {onBackToInstructions && (
+            <button
+              onClick={onBackToInstructions}
+              className="btn-secondary w-full"
+            >
+              📖 説明ページに戻る
+            </button>
+          )}
           
           <div className="text-xs text-gray-500">
             明日の新しい問題をお楽しみに！
