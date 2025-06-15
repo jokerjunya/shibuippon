@@ -1,6 +1,6 @@
 [build]
   base = "frontend"
-  publish = "frontend/.next"
+  publish = "out"
   command = "npm run build"
 
 [build.environment]
@@ -9,7 +9,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  to = "/.netlify/functions/api"
   status = 200
 
 [[redirects]]
@@ -18,4 +18,4 @@
   status = 200
 
 [functions]
-  directory = "netlify/functions" 
+  directory = "frontend/netlify/functions" 
