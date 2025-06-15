@@ -29,6 +29,7 @@ export interface ResultResponse {
   zScore: number;
   mean: number;
   stdDev: number;
+  answers?: UserAnswer[];
 }
 
 // コンポーネント用の状態管理型

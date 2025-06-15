@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import IpponAnimation from '@/components/IpponAnimation';
 import InstructionPage from '@/components/InstructionPage';
+import AnswerFeedback from '@/components/AnswerFeedback';
 
 export default function HomePage() {
   const [showInstructions, setShowInstructions] = useState(true);
@@ -26,6 +27,11 @@ export default function HomePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showIpponAnimation, setShowIpponAnimation] = useState(false);
+  const [showAnswerFeedback, setShowAnswerFeedback] = useState(false);
+  const [lastAnswer, setLastAnswer] = useState<{
+    choiceId: number;
+    earnedPoint: number;
+  } | null>(null);
 
   // テスト開始時の初期化
   const handleStartTest = () => {
@@ -82,22 +88,33 @@ export default function HomePage() {
         totalScore: answerData.totalScore,
       }));
 
+      // 回答フィードバックを設定
+      setLastAnswer({
+        choiceId,
+        earnedPoint: answerData.earnedPoint,
+      });
+
+      // 回答フィードバック表示
+      setShowAnswerFeedback(true);
+
       // IPPON判定（10点の場合）
       const isIppon = answerData.earnedPoint === 10;
       
       if (isIppon) {
-        // IPPONアニメーション表示（200ms後）
+        // IPPONアニメーション表示（1秒後）
         setTimeout(() => {
           setShowIpponAnimation(true);
-        }, 200);
+        }, 1000);
       }
 
       // 次の問題へ移行または結果表示（IPPONの場合は遅延を追加）
-      const transitionDelay = isIppon ? 2700 : 1500; // IPPON演出時間を考慮
+      const transitionDelay = isIppon ? 4000 : 2500; // フィードバック表示時間を考慮
       
       if (gameState.currentQuestionIndex < odais.length - 1) {
         // 次の問題へ
         setTimeout(() => {
+          setShowAnswerFeedback(false);
+          setLastAnswer(null);
           setGameState(prev => ({
             ...prev,
             currentQuestionIndex: prev.currentQuestionIndex + 1,
@@ -107,7 +124,13 @@ export default function HomePage() {
         // 全問題完了 - 結果を取得
         setTimeout(async () => {
           try {
+            setShowAnswerFeedback(false);
+            setLastAnswer(null);
             const resultData = await apiClient.getSessionResult(gameState.sessionId!);
+            // GameStateのanswersがない場合はAPIから取得したanswersを使用
+            if (!resultData.answers) {
+              resultData.answers = gameState.answers;
+            }
             setResult(resultData);
             setGameState(prev => ({
               ...prev,
@@ -140,6 +163,8 @@ export default function HomePage() {
     setResult(null);
     setError(null);
     setShowIpponAnimation(false);
+    setShowAnswerFeedback(false);
+    setLastAnswer(null);
     setIsLoading(true);
     initializeGame();
   };
@@ -157,6 +182,8 @@ export default function HomePage() {
     setResult(null);
     setError(null);
     setShowIpponAnimation(false);
+    setShowAnswerFeedback(false);
+    setLastAnswer(null);
     setIsLoading(false);
   };
 
@@ -241,14 +268,23 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 問題カード */}
-      <QuestionCard
-        odai={currentOdai}
-        questionNumber={gameState.currentQuestionIndex + 1}
-        totalQuestions={odais.length}
-        onAnswer={handleAnswer}
-        isLoading={isSubmitting}
-      />
+      {/* 問題カード または 回答フィードバック */}
+      {showAnswerFeedback && lastAnswer ? (
+        <AnswerFeedback
+          selectedChoice={currentOdai.choices.find(choice => choice.id === lastAnswer.choiceId)!}
+          earnedPoint={lastAnswer.earnedPoint}
+          questionNumber={gameState.currentQuestionIndex + 1}
+          totalQuestions={odais.length}
+        />
+      ) : (
+        <QuestionCard
+          odai={currentOdai}
+          questionNumber={gameState.currentQuestionIndex + 1}
+          totalQuestions={odais.length}
+          onAnswer={handleAnswer}
+          isLoading={isSubmitting}
+        />
+      )}
 
       {/* 今日のヒント */}
       <div className="card bg-blue-50 border-blue-200">

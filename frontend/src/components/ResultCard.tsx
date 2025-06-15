@@ -115,21 +115,75 @@ export default function ResultCard({ result, onRestart, onBackToInstructions }: 
         </div>
       </div>
 
-      {/* 統計情報カード */}
+      {/* 詳細分析カード */}
       <div className="card">
-        <h3 className="text-lg font-semibold mb-4 text-center">📊 詳細統計</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-2xl font-bold text-primary-600">{result.totalScore}</p>
-            <p className="text-sm text-gray-600">獲得ポイント</p>
+        <h3 className="text-lg font-semibold mb-4 text-center">📊 詳細分析</h3>
+        
+        {/* パフォーマンス指標 */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-200">
+            <p className="text-xl font-bold text-yellow-600">
+              {result.answers?.filter(a => a.earnedPoint === 10).length || 0}
+            </p>
+            <p className="text-xs text-yellow-700">🏆 IPPON獲得</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
+            <p className="text-xl font-bold text-red-600">
+              {result.answers?.filter(a => a.earnedPoint >= 8).length || 0}
+            </p>
+            <p className="text-xs text-red-700">🔥 高得点</p>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+            <p className="text-xl font-bold text-blue-600">
+              {result.answers ? Math.round((result.totalScore / (result.answers.length * 10)) * 100) : 0}%
+            </p>
+            <p className="text-xs text-blue-700">📈 正答率</p>
+          </div>
+          <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
+            <p className="text-xl font-bold text-green-600">
+              {result.answers ? Math.round(result.totalScore / result.answers.length * 10) / 10 : 0}
+            </p>
+            <p className="text-xs text-green-700">⭐ 平均得点</p>
+          </div>
+        </div>
+
+        {/* 統計比較 */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <p className="text-2xl font-bold text-primary-600">{result.totalScore}</p>
+            <p className="text-sm text-gray-600">あなたのスコア</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
             <p className="text-2xl font-bold text-secondary-600">{result.mean}</p>
             <p className="text-sm text-gray-600">全国平均</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-2xl font-bold text-green-600">{result.stdDev}</p>
-            <p className="text-sm text-gray-600">標準偏差</p>
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <p className="text-2xl font-bold text-green-600">
+              {result.totalScore > result.mean ? '+' : ''}{result.totalScore - result.mean}
+            </p>
+            <p className="text-sm text-gray-600">平均との差</p>
+          </div>
+        </div>
+
+        {/* 強み・弱み分析 */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+          <h4 className="font-semibold text-blue-900 mb-2">💡 あなたの特徴</h4>
+          <div className="space-y-2 text-sm">
+            {result.zScore >= 60 && (
+              <p className="text-blue-800">✨ 優れたユーモアセンスをお持ちです</p>
+            )}
+            {result.answers && result.answers.filter(a => a.earnedPoint === 10).length > 0 && (
+              <p className="text-purple-800">🏆 IPPON級の回答を選ぶ眼力があります</p>
+            )}
+            {result.answers && result.answers.filter(a => a.earnedPoint >= 8).length >= 3 && (
+              <p className="text-indigo-800">🎯 安定して高得点を狙えています</p>
+            )}
+            {result.totalScore > result.mean && (
+              <p className="text-green-800">📊 全国平均を上回る実力です</p>
+            )}
+            {result.zScore < 45 && (
+              <p className="text-orange-800">💪 継続することで必ず上達します</p>
+            )}
           </div>
         </div>
       </div>

@@ -188,6 +188,17 @@ const sessionRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             zScore: { type: 'number' },
             mean: { type: 'number' },
             stdDev: { type: 'number' },
+            answers: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  odaiId: { type: 'number' },
+                  choiceId: { type: 'number' },
+                  earnedPoint: { type: 'number' },
+                },
+              },
+            },
           },
         },
       },
@@ -196,9 +207,20 @@ const sessionRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     try {
       const sessionId = parseInt(request.params.id, 10);
 
-      // セッションの存在確認
+      // セッションの存在確認と回答データを取得
       const session = await fastify.prisma.session.findUnique({
         where: { id: sessionId },
+        include: {
+          answers: {
+            include: {
+              choice: {
+                include: {
+                  odai: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!session) {
@@ -206,12 +228,7 @@ const sessionRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       }
 
       // このセッションの合計スコア
-      const sessionScore = await fastify.prisma.userAnswer.aggregate({
-        where: { sessionId },
-        _sum: { earnedPoint: true },
-      });
-
-      const totalScore = sessionScore._sum.earnedPoint || 0;
+      const totalScore = session.answers.reduce((sum, answer) => sum + answer.earnedPoint, 0);
 
       // 全セッションのスコア統計を計算
       const allScores = await fastify.prisma.session.findMany({
@@ -240,11 +257,19 @@ const sessionRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         ? ((totalScore - mean) / stdDev) * 10 + 50 
         : 50; // 標準偏差が0の場合のデフォルト値
 
+      // 回答データを整形
+      const answers = session.answers.map(answer => ({
+        odaiId: answer.choice.odai.id,
+        choiceId: answer.choiceId,
+        earnedPoint: answer.earnedPoint,
+      }));
+
       return {
         totalScore,
         zScore: Math.round(zScore * 10) / 10, // 小数点第1位まで
         mean: Math.round(mean * 10) / 10,
         stdDev: Math.round(stdDev * 10) / 10,
+        answers,
       };
     } catch (error) {
       fastify.log.error(error);

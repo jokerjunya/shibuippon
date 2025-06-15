@@ -53,35 +53,10 @@ export default function QuestionCard({
                 <p className="text-gray-900 font-medium leading-relaxed">
                   {choice.text}
                 </p>
-                <div className="flex items-center justify-between mt-2">
+                <div className="mt-2">
                   <span className="text-xs text-gray-500">
                     クリックして回答
                   </span>
-                  <div className="flex items-center space-x-1">
-                    {choice.pointValue === 10 && (
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
-                        🏆 IPPON級
-                      </span>
-                    )}
-                    {choice.pointValue >= 8 && choice.pointValue < 10 && (
-                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                        👍 上級
-                      </span>
-                    )}
-                    {choice.pointValue >= 6 && choice.pointValue < 8 && (
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                        😊 普通
-                      </span>
-                    )}
-                    {choice.pointValue < 6 && (
-                      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                        🤔 微妙
-                      </span>
-                    )}
-                    <span className="text-xs text-primary-600 font-medium">
-                      {choice.pointValue}pt
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>

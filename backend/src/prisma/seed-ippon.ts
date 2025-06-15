@@ -126,6 +126,8 @@ async function main() {
     // IPPONデータを投入
     for (let i = 0; i < ipponData.length; i++) {
       const data = ipponData[i];
+      if (!data) continue;
+      
       // エピソードを作成（年度とブロックとインデックスの組み合わせ）
       const episodeCode = `${data.year}-${data.block}-${i + 1}`;
       const episode = await prisma.episode.create({

@@ -44,7 +44,7 @@ const challengeRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
       const todayString = todayJST.toISOString().split('T')[0];
 
       // シード値として今日の日付を使用してランダムな問題を選択
-      const seed = parseInt(todayString.replace(/-/g, ''), 10);
+      const seed = parseInt(todayString?.replace(/-/g, '') || '20240101', 10);
       
       // 全ての問題を取得
       const allOdais = await fastify.prisma.odai.findMany({
@@ -58,13 +58,13 @@ const challengeRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
       }
 
       // 決定論的にランダムな5問を選択
-      const selectedOdais = [];
+      const selectedOdais: typeof allOdais = [];
       for (let i = 0; i < 5 && i < allOdais.length; i++) {
         const index = (seed + i * 17) % allOdais.length;
         const selectedOdai = allOdais[index];
         
         // 重複チェック
-        if (!selectedOdais.find(odai => odai.id === selectedOdai.id)) {
+        if (selectedOdai && !selectedOdais.find(odai => odai.id === selectedOdai.id)) {
           selectedOdais.push(selectedOdai);
         }
       }
@@ -74,7 +74,7 @@ const challengeRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         const remainingOdais = allOdais.filter(
           odai => !selectedOdais.find(selected => selected.id === odai.id)
         );
-        if (remainingOdais.length > 0) {
+        if (remainingOdais.length > 0 && remainingOdais[0]) {
           selectedOdais.push(remainingOdais[0]);
         } else {
           break;
