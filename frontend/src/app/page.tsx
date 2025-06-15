@@ -45,20 +45,50 @@ export default function HomePage() {
       setIsLoading(true);
       setError(null);
 
+      console.log('🎮 ゲーム初期化を開始します...');
+
       // デイリーチャレンジの問題を取得
+      console.log('📝 デイリーチャレンジを取得中...');
       const challengeData = await apiClient.getDailyChallenge();
+      console.log('✅ デイリーチャレンジ取得成功:', challengeData);
+      
+      if (!challengeData.odais || challengeData.odais.length === 0) {
+        throw new Error('問題データが見つかりません。データベースが初期化されていない可能性があります。');
+      }
+      
       setOdais(challengeData.odais);
 
       // セッションを作成
+      console.log('🔗 セッションを作成中...');
       const sessionData = await apiClient.createSession(navigator.userAgent);
+      console.log('✅ セッション作成成功:', sessionData);
+      
       setGameState(prev => ({
         ...prev,
         sessionId: sessionData.sessionId,
       }));
 
+      console.log('🎉 ゲーム初期化完了！');
+
     } catch (err) {
-      console.error('Game initialization failed:', err);
-      setError('ゲームの初期化に失敗しました。ページを再読み込みしてください。');
+      console.error('❌ ゲーム初期化失敗:', err);
+      
+      // エラーの詳細を判定
+      let errorMessage = 'ゲームの初期化に失敗しました。';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('問題データが見つかりません')) {
+          errorMessage = 'データベースが初期化されていません。管理者にお問い合わせください。';
+        } else if (err.message.includes('fetch')) {
+          errorMessage = 'サーバーに接続できません。ネットワーク接続を確認してください。';
+        } else if (err.message.includes('No odais found')) {
+          errorMessage = 'データベースに問題データがありません。データベースの初期化が必要です。';
+        } else {
+          errorMessage = `エラー詳細: ${err.message}`;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

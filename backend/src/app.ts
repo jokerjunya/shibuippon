@@ -9,6 +9,7 @@ import { PrismaClient } from '@prisma/client';
 import challengeRoutes from './routes/challenge';
 import sessionRoutes from './routes/session';
 import { authRoutes } from './routes/auth';
+import adminRoutes from './routes/admin';
 
 // Netlify Functions環境でのPrisma設定
 const prisma = new PrismaClient({
@@ -90,6 +91,7 @@ async function buildApp() {
   await fastify.register(challengeRoutes, { prefix: '/api' });
   await fastify.register(sessionRoutes, { prefix: '/api' });
   await fastify.register(authRoutes, { prefix: '/api/auth' });
+  await fastify.register(adminRoutes, { prefix: '/api/admin' });
 
   // ヘルスチェックエンドポイント
   fastify.get('/health', async () => {

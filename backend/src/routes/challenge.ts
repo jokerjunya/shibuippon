@@ -54,7 +54,71 @@ const challengeRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
       });
 
       if (allOdais.length === 0) {
-        return reply.status(404).send({ error: 'No odais found' });
+        // データベースが空の場合、自動初期化を試行
+        console.log('⚠️ データベースが空です。自動初期化を試行します...');
+        
+        try {
+          // 管理者APIを内部呼び出し
+          const initResponse = await fastify.inject({
+            method: 'POST',
+            url: '/api/admin/init-database',
+          });
+          
+          if (initResponse.statusCode === 200) {
+            console.log('✅ データベース自動初期化成功');
+            
+            // 再度データを取得
+            const retryOdais = await fastify.prisma.odai.findMany({
+              include: {
+                choices: true,
+              },
+            });
+            
+            if (retryOdais.length > 0) {
+              // 成功した場合、再帰的に処理を続行
+              const seed = parseInt(todayString?.replace(/-/g, '') || '20240101', 10);
+              const selectedOdais: typeof retryOdais = [];
+              
+              for (let i = 0; i < 5 && i < retryOdais.length; i++) {
+                const index = (seed + i * 17) % retryOdais.length;
+                const selectedOdai = retryOdais[index];
+                
+                if (selectedOdai && !selectedOdais.find(odai => odai.id === selectedOdai.id)) {
+                  selectedOdais.push(selectedOdai);
+                }
+              }
+              
+              while (selectedOdais.length < 5 && selectedOdais.length < retryOdais.length) {
+                const remainingOdais = retryOdais.filter(
+                  odai => !selectedOdais.find(selected => selected.id === odai.id)
+                );
+                if (remainingOdais.length > 0 && remainingOdais[0]) {
+                  selectedOdais.push(remainingOdais[0]);
+                } else {
+                  break;
+                }
+              }
+              
+              return {
+                odais: selectedOdais.map(odai => ({
+                  id: odai.id,
+                  text: odai.text,
+                  choices: odai.choices.map(choice => ({
+                    id: choice.id,
+                    text: choice.text,
+                    pointValue: choice.pointValue,
+                  })),
+                })),
+              };
+            }
+          }
+        } catch (initError) {
+          console.error('❌ データベース自動初期化失敗:', initError);
+        }
+        
+        return reply.status(404).send({ 
+          error: 'No odais found. Database initialization failed. Please contact administrator.' 
+        });
       }
 
       // 決定論的にランダムな5問を選択
