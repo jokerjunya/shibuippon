@@ -30,6 +30,9 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+console.log('🔧 API Base URL:', API_BASE_URL);
+console.log('🌍 Environment:', process.env.NODE_ENV);
+
 class ApiClient {
   private async fetchApi<T>(
     endpoint: string,
@@ -49,17 +52,54 @@ class ApiClient {
       ...options,
     };
 
+    console.log('📡 API Request:', {
+      url,
+      method: config.method || 'GET',
+      hasAuth: !!token,
+      hasBody: !!config.body
+    });
+
     try {
       const response = await fetch(url, config);
       
+      console.log('📨 API Response:', {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type'),
+        ok: response.ok
+      });
+      
       if (!response.ok) {
-        const errorData: ApiError = await response.json();
-        throw new Error(errorData.error || 'API request failed');
+        // レスポンスがJSONかどうかチェック
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData: ApiError = await response.json();
+          throw new Error(errorData.error || 'API request failed');
+        } else {
+          // HTMLレスポンスの場合
+          const htmlText = await response.text();
+          console.error('❌ Received HTML instead of JSON:', htmlText.substring(0, 200));
+          throw new Error(`API returned HTML instead of JSON. Status: ${response.status} ${response.statusText}`);
+        }
       }
 
-      return await response.json();
+      // レスポンスがJSONかどうかチェック
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const responseText = await response.text();
+        console.error('❌ Non-JSON response:', responseText.substring(0, 200));
+        throw new Error('API returned non-JSON response');
+      }
+
+      const data = await response.json();
+      console.log('✅ API Success:', { url, dataKeys: Object.keys(data) });
+      return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('❌ API request failed:', {
+        url,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       throw error;
     }
   }

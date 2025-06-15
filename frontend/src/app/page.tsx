@@ -47,6 +47,16 @@ export default function HomePage() {
 
       console.log('🎮 ゲーム初期化を開始します...');
 
+      // まずヘルスチェックを実行
+      console.log('🏥 API接続をテスト中...');
+      try {
+        const healthData = await apiClient.healthCheck();
+        console.log('✅ API接続成功:', healthData);
+      } catch (healthError) {
+        console.error('❌ API接続失敗:', healthError);
+        throw new Error(`API接続に失敗しました: ${healthError instanceof Error ? healthError.message : 'Unknown error'}`);
+      }
+
       // デイリーチャレンジの問題を取得
       console.log('📝 デイリーチャレンジを取得中...');
       const challengeData = await apiClient.getDailyChallenge();
@@ -77,12 +87,16 @@ export default function HomePage() {
       let errorMessage = 'ゲームの初期化に失敗しました。';
       
       if (err instanceof Error) {
-        if (err.message.includes('問題データが見つかりません')) {
+        if (err.message.includes('API接続に失敗しました')) {
+          errorMessage = `サーバー接続エラー: ${err.message}`;
+        } else if (err.message.includes('問題データが見つかりません')) {
           errorMessage = 'データベースが初期化されていません。管理者にお問い合わせください。';
         } else if (err.message.includes('fetch')) {
           errorMessage = 'サーバーに接続できません。ネットワーク接続を確認してください。';
         } else if (err.message.includes('No odais found')) {
           errorMessage = 'データベースに問題データがありません。データベースの初期化が必要です。';
+        } else if (err.message.includes('HTML instead of JSON')) {
+          errorMessage = 'APIエンドポイントが見つかりません。Netlify Functionsの設定を確認してください。';
         } else {
           errorMessage = `エラー詳細: ${err.message}`;
         }

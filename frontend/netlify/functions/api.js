@@ -3,15 +3,25 @@ const { buildApp } = require('../../../backend/src/app');
 let app;
 
 exports.handler = async (event, context) => {
+  // デバッグ情報を詳細に出力
+  console.log('🔍 Netlify Function called with:', {
+    httpMethod: event.httpMethod,
+    path: event.path,
+    rawUrl: event.rawUrl,
+    queryStringParameters: event.queryStringParameters,
+    headers: Object.keys(event.headers || {}),
+    bodyLength: event.body ? event.body.length : 0,
+  });
+
   // アプリケーションの初期化（初回のみ）
   if (!app) {
     try {
-      console.log('Initializing Fastify app...');
+      console.log('🚀 Initializing Fastify app...');
       app = await buildApp();
       await app.ready();
-      console.log('Fastify app initialized successfully');
+      console.log('✅ Fastify app initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize app:', error);
+      console.error('❌ Failed to initialize app:', error);
       console.error('Error details:', error.message);
       console.error('Stack trace:', error.stack);
       return {
@@ -32,6 +42,7 @@ exports.handler = async (event, context) => {
 
   // CORS preflight request
   if (event.httpMethod === 'OPTIONS') {
+    console.log('✅ Handling CORS preflight request');
     return {
       statusCode: 200,
       headers: {
@@ -47,21 +58,40 @@ exports.handler = async (event, context) => {
   const { httpMethod, path, queryStringParameters, body, headers } = event;
   
   // パスから /api を除去（Netlify Functions では不要）
-  const apiPath = path.replace(/^\/api/, '') || '/';
+  let apiPath = path;
+  if (apiPath.startsWith('/api')) {
+    apiPath = apiPath.replace(/^\/api/, '');
+  }
+  if (!apiPath || apiPath === '/') {
+    apiPath = '/';
+  }
   
-  console.log('Processing request:', {
+  console.log('🔄 Processing request:', {
     method: httpMethod,
     originalPath: path,
-    apiPath: apiPath,
+    processedPath: apiPath,
     query: queryStringParameters
   });
   
   try {
+    const injectUrl = apiPath + (queryStringParameters ? '?' + new URLSearchParams(queryStringParameters).toString() : '');
+    console.log('📡 Injecting to Fastify:', {
+      method: httpMethod,
+      url: injectUrl,
+      hasBody: !!body
+    });
+
     const response = await app.inject({
       method: httpMethod,
-      url: apiPath + (queryStringParameters ? '?' + new URLSearchParams(queryStringParameters).toString() : ''),
+      url: injectUrl,
       payload: body,
       headers: headers,
+    });
+
+    console.log('📨 Fastify response:', {
+      statusCode: response.statusCode,
+      contentType: response.headers['content-type'],
+      bodyLength: response.payload ? response.payload.length : 0
     });
 
     return {
@@ -75,7 +105,9 @@ exports.handler = async (event, context) => {
       body: response.payload,
     };
   } catch (error) {
-    console.error('API request failed:', error);
+    console.error('❌ API request failed:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
     return {
       statusCode: 500,
       headers: {
@@ -84,7 +116,10 @@ exports.handler = async (event, context) => {
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       },
-      body: JSON.stringify({ error: 'Internal server error' }),
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message 
+      }),
     };
   }
 }; 
