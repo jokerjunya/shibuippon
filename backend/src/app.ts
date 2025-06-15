@@ -94,7 +94,7 @@ async function buildApp() {
   await fastify.register(adminRoutes, { prefix: '/api/admin' });
 
   // ヘルスチェックエンドポイント
-  fastify.get('/health', async () => {
+  fastify.get('/api/health', async () => {
     return { status: 'OK', timestamp: new Date().toISOString() };
   });
 

@@ -132,7 +132,7 @@ class ApiClient {
 
   // ヘルスチェック
   async healthCheck(): Promise<{ status: string; timestamp: string }> {
-    return this.fetchApi('/health');
+    return this.fetchApi('/api/health');
   }
 }
 
@@ -159,5 +159,5 @@ export const fetcher = async (url: string) => {
 export const getApiKey = {
   dailyChallenge: () => '/api/daily-challenge',
   sessionResult: (sessionId: number) => `/api/sessions/${sessionId}/result`,
-  health: () => '/health',
+  health: () => '/api/health',
 }; 

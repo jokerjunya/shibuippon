@@ -3,6 +3,9 @@ const { buildApp } = require('../../../backend/src/app');
 let app;
 
 exports.handler = async (event, context) => {
+  // Netlify Functions環境での設定
+  process.env.NODE_ENV = process.env.NODE_ENV || 'production';
+  
   // デバッグ情報を詳細に出力
   console.log('🔍 Netlify Function called with:', {
     httpMethod: event.httpMethod,
@@ -11,6 +14,8 @@ exports.handler = async (event, context) => {
     queryStringParameters: event.queryStringParameters,
     headers: Object.keys(event.headers || {}),
     bodyLength: event.body ? event.body.length : 0,
+    nodeEnv: process.env.NODE_ENV,
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
   });
 
   // アプリケーションの初期化（初回のみ）
@@ -57,13 +62,27 @@ exports.handler = async (event, context) => {
   // リクエストの変換
   const { httpMethod, path, queryStringParameters, body, headers } = event;
   
-  // パスから /api を除去（Netlify Functions では不要）
+  // パス処理の改善
   let apiPath = path;
+  
+  // Netlify Functionsでは、パスが /.netlify/functions/api/... の形式で来る場合がある
+  if (apiPath.includes('/.netlify/functions/api')) {
+    apiPath = apiPath.replace('/.netlify/functions/api', '');
+  }
+  
+  // /api プレフィックスを除去
   if (apiPath.startsWith('/api')) {
     apiPath = apiPath.replace(/^\/api/, '');
   }
+  
+  // 空のパスまたはルートパスの場合
   if (!apiPath || apiPath === '/') {
     apiPath = '/';
+  }
+  
+  // パスが /api/ で始まる場合は、そのまま使用
+  if (path.startsWith('/api/')) {
+    apiPath = path;
   }
   
   console.log('🔄 Processing request:', {
