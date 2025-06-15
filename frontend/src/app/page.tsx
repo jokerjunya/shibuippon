@@ -47,7 +47,17 @@ export default function HomePage() {
 
       console.log('🎮 ゲーム初期化を開始します...');
 
-      // まずヘルスチェックを実行
+      // まず基本的な接続テストを実行
+      console.log('🔌 基本接続をテスト中...');
+      try {
+        const testData = await apiClient.testConnection();
+        console.log('✅ 基本接続成功:', testData);
+      } catch (testError) {
+        console.error('❌ 基本接続失敗:', testError);
+        throw new Error(`基本接続に失敗しました: ${testError instanceof Error ? testError.message : 'Unknown error'}`);
+      }
+
+      // 次にヘルスチェックを実行
       console.log('🏥 API接続をテスト中...');
       try {
         const healthData = await apiClient.healthCheck();
@@ -87,7 +97,9 @@ export default function HomePage() {
       let errorMessage = 'ゲームの初期化に失敗しました。';
       
       if (err instanceof Error) {
-        if (err.message.includes('API接続に失敗しました')) {
+        if (err.message.includes('基本接続に失敗しました')) {
+          errorMessage = `Netlify Functions接続エラー: ${err.message}`;
+        } else if (err.message.includes('API接続に失敗しました')) {
           errorMessage = `サーバー接続エラー: ${err.message}`;
         } else if (err.message.includes('問題データが見つかりません')) {
           errorMessage = 'データベースが初期化されていません。管理者にお問い合わせください。';

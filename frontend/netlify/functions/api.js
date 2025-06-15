@@ -100,6 +100,26 @@ exports.handler = async (event, context) => {
       hasBody: !!body
     });
 
+    // シンプルなテスト用レスポンス（ルートパスの場合）
+    if (apiPath === '/' && httpMethod === 'GET') {
+      console.log('🏠 Returning simple root response');
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        },
+        body: JSON.stringify({ 
+          message: 'Netlify Functions API is working',
+          timestamp: new Date().toISOString(),
+          path: apiPath,
+          originalPath: path
+        }),
+      };
+    }
+
     const response = await app.inject({
       method: httpMethod,
       url: injectUrl,

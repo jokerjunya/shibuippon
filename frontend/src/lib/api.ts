@@ -134,6 +134,11 @@ class ApiClient {
   async healthCheck(): Promise<{ status: string; timestamp: string }> {
     return this.fetchApi('/api/health');
   }
+
+  // テスト用エンドポイント
+  async testConnection(): Promise<{ message: string; timestamp: string }> {
+    return this.fetchApi('/');
+  }
 }
 
 // シングルトンインスタンスをエクスポート
